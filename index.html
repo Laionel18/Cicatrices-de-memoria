@@ -2,554 +2,1009 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Cicatrices de Memoria - Terror Psicológico 3D</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cicatrices de Memoria</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <style>
+        /* RESET Y CONFIGURACIÓN MÓVIL */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
         }
-        
-        body {
-            background: #000;
-            color: #fff;
-            font-family: 'Courier New', monospace;
+
+        html, body {
+            width: 100%;
+            height: 100%;
             overflow: hidden;
             position: fixed;
-            width: 100%;
-            height: 100%;
+            background: #000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
         }
-        
+
+        /* PANTALLA DE CARGA (OCUPA TODA LA PANTALLA) */
         #loading-screen {
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
             background: #000;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 1000;
+            padding: 20px;
+            text-align: center;
         }
-        
+
         .loading-title {
-            font-size: 2.5em;
-            color: #8B0000;
+            font-size: clamp(2rem, 8vw, 3rem);
+            color: #ff0000;
             text-shadow: 0 0 10px #ff0000;
             margin-bottom: 20px;
-            animation: flicker 3s infinite;
+            animation: flicker 2s infinite;
+            font-weight: bold;
         }
-        
-        @keyframes flicker {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-        
+
         .loading-bar-container {
-            width: 300px;
+            width: min(300px, 80vw);
             height: 20px;
             background: #222;
-            border: 2px solid #444;
             border-radius: 10px;
             overflow: hidden;
             margin: 20px 0;
+            border: 2px solid #444;
         }
-        
+
         .loading-bar {
             height: 100%;
             background: linear-gradient(90deg, #8B0000, #FF0000);
             width: 0%;
             transition: width 0.3s;
         }
-        
+
         .loading-text {
-            margin-top: 20px;
-            color: #888;
+            color: #aaa;
+            font-size: clamp(0.9rem, 4vw, 1.2rem);
+            margin-top: 15px;
+            min-height: 1.2em;
         }
-        
-        .controls-info {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
-            text-align: center;
-            color: #666;
-            font-size: 0.9em;
-            line-height: 1.4;
+
+        #start-btn {
+            background: linear-gradient(45deg, #8B0000, #FF0000);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: clamp(1rem, 5vw, 1.2rem);
+            border-radius: 10px;
+            margin-top: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+            width: min(250px, 70vw);
         }
-        
-        .warning {
-            color: #ff6600;
-            margin: 20px 0;
-            text-align: center;
-            max-width: 500px;
-        }
-        
+
+        /* CONTENEDOR DEL JUEGO */
         #game-container {
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
+            display: none;
         }
-        
+
         canvas {
             width: 100%;
             height: 100%;
             display: block;
         }
-        
-        /* Botones móviles */
-        .mobile-controls {
-            position: absolute;
-            bottom: 20px;
-            width: 100%;
-            display: none;
-            justify-content: space-between;
-            padding: 0 20px;
-            z-index: 100;
+
+        /* HUD ADAPTATIVO PARA MÓVIL */
+        .hud {
+            position: fixed;
+            top: env(safe-area-inset-top, 10px);
+            left: 10px;
+            right: 10px;
+            z-index: 50;
+            pointer-events: none;
         }
-        
+
+        .hud-item {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            font-size: clamp(0.8rem, 3vw, 1rem);
+            max-width: 200px;
+        }
+
+        .battery-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .battery-bar {
+            width: 120px;
+            height: 15px;
+            background: #111;
+            border-radius: 3px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .battery-fill {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #00ff00, #ff0000);
+            transition: width 0.5s;
+        }
+
+        /* CONTROLES TÁCTILES (OCUPAN PARTE INFERIOR) */
+        .mobile-controls {
+            position: fixed;
+            bottom: max(20px, env(safe-area-inset-bottom, 20px));
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 15px;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .mobile-controls > * {
+            pointer-events: auto;
+        }
+
         .mobile-joystick {
-            width: 150px;
-            height: 150px;
+            width: 120px;
+            height: 120px;
             background: rgba(0, 0, 0, 0.5);
             border-radius: 50%;
             position: relative;
+            border: 2px solid rgba(139, 0, 0, 0.5);
             touch-action: none;
         }
-        
+
+        .joystick-knob {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: rgba(139, 0, 0, 0.7);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .mobile-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
         .mobile-button {
-            width: 80px;
-            height: 80px;
+            width: 70px;
+            height: 70px;
             background: rgba(139, 0, 0, 0.7);
             border-radius: 50%;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
             color: white;
-            font-size: 0.8em;
+            font-size: 0.7rem;
             text-align: center;
             border: 2px solid #8B0000;
-            user-select: none;
-            touch-action: none;
+            touch-action: manipulation;
         }
-        
-        /* HUD del juego */
-        .hud {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            right: 20px;
-            display: none;
-            z-index: 50;
+
+        .mobile-button:active {
+            transform: scale(0.95);
+            background: rgba(255, 0, 0, 0.8);
         }
-        
-        .hud-item {
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px 20px;
-            border-radius: 5px;
-            border-left: 3px solid #8B0000;
-            margin-bottom: 10px;
-            backdrop-filter: blur(5px);
-        }
-        
-        .battery-bar {
-            width: 200px;
-            height: 20px;
-            background: #222;
-            border: 1px solid #444;
-            border-radius: 3px;
-            overflow: hidden;
-        }
-        
-        .battery-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #00ff00, #ff0000);
-            width: 100%;
-        }
-        
-        /* Game Over Screen */
+
+        /* PANTALLA GAME OVER */
         .game-over {
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.9);
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.95);
             display: none;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 200;
+            padding: 20px;
+            text-align: center;
         }
-        
+
         .game-over h1 {
             color: #ff0000;
-            font-size: 3em;
+            font-size: clamp(2rem, 10vw, 3rem);
             margin-bottom: 20px;
-            text-shadow: 0 0 10px #ff0000;
         }
-        
+
         .game-over p {
-            font-size: 1.2em;
+            font-size: clamp(1rem, 5vw, 1.2rem);
             color: #ccc;
             margin-bottom: 30px;
-            text-align: center;
             max-width: 500px;
         }
-        
+
         .btn {
-            background: #8B0000;
+            background: linear-gradient(45deg, #8B0000, #FF0000);
             color: white;
             border: none;
-            padding: 15px 30px;
-            font-size: 1.2em;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background 0.3s;
+            padding: 12px 25px;
+            font-size: clamp(1rem, 4vw, 1.1rem);
+            border-radius: 8px;
             margin: 10px;
+            cursor: pointer;
+            width: min(200px, 70vw);
         }
-        
-        .btn:hover {
-            background: #ff0000;
+
+        /* EFECTOS DE PANTALLA */
+        #blood-effect {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle, rgba(255,0,0,0) 0%, rgba(255,0,0,0.3) 100%);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 60;
+        }
+
+        #static-effect {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: repeating-linear-gradient(0deg, #000, #fff 1px, #000 2px);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 70;
+            display: none;
+        }
+
+        /* ANIMACIONES */
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* ORIENTACIÓN */
+        @media (orientation: landscape) {
+            .hud {
+                top: 10px;
+                left: 10px;
+                right: auto;
+            }
+            
+            .mobile-controls {
+                bottom: 10px;
+            }
+            
+            .mobile-joystick {
+                width: 100px;
+                height: 100px;
+            }
+            
+            .mobile-button {
+                width: 60px;
+                height: 60px;
+                font-size: 0.6rem;
+            }
+        }
+
+        /* DISPOSITIVOS MUY PEQUEÑOS */
+        @media (max-height: 600px) {
+            .hud-item {
+                padding: 6px 10px;
+                font-size: 0.7rem;
+            }
+            
+            .battery-bar {
+                width: 80px;
+                height: 12px;
+            }
+            
+            .mobile-button {
+                width: 55px;
+                height: 55px;
+                font-size: 0.6rem;
+            }
+        }
+
+        /* iOS SAFE AREAS */
+        @supports (padding: max(0px)) {
+            .hud {
+                top: max(10px, env(safe-area-inset-top, 10px));
+                left: max(10px, env(safe-area-inset-left, 10px));
+            }
+            
+            .mobile-controls {
+                bottom: max(20px, env(safe-area-inset-bottom, 20px));
+                left: env(safe-area-inset-left, 0);
+                right: env(safe-area-inset-right, 0);
+                padding-left: max(15px, env(safe-area-inset-left, 15px));
+                padding-right: max(15px, env(safe-area-inset-right, 15px));
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Pantalla de carga -->
+    <!-- PANTALLA DE CARGA -->
     <div id="loading-screen">
         <h1 class="loading-title">CICATRICES DE MEMORIA</h1>
         <div class="loading-bar-container">
             <div class="loading-bar" id="loading-bar"></div>
         </div>
-        <div class="loading-text" id="loading-text">Inicializando motor gráfico...</div>
-        
-        <div class="warning">
-            ⚠️ JUEGO DE TERROR - Contiene sustos y temas perturbadores<br>
-            Recomendado para mayores de 16 años
-        </div>
-        
-        <div class="controls-info" id="pc-controls">
-            <strong>CONTROLES PC:</strong><br>
-            WASD = Movimiento | Mouse = Mirar | F = Linterna<br>
-            E = Interactuar | SHIFT = Correr | ESC = Menú
-        </div>
-        
-        <div class="controls-info" id="mobile-controls" style="display: none;">
-            <strong>CONTROLES MÓVIL:</strong><br>
-            Joystick izquierdo = Movimiento | Arrastrar pantalla = Mirar<br>
-            Botones táctiles = Acciones | Gyroscopio = Rotación (opcional)
+        <div class="loading-text" id="loading-text">Cargando...</div>
+        <button id="start-btn" onclick="startGame()">COMENZAR</button>
+        <div style="color: #666; margin-top: 30px; font-size: 0.8rem;">
+            Usa los controles táctiles para moverte
         </div>
     </div>
-    
-    <!-- Contenedor del juego -->
-    <div id="game-container">
-        <canvas id="game-canvas"></canvas>
-    </div>
-    
-    <!-- HUD del juego -->
-    <div class="hud" id="game-hud">
+
+    <!-- CONTENEDOR DEL JUEGO -->
+    <div id="game-container"></div>
+
+    <!-- HUD -->
+    <div class="hud" id="game-hud" style="display: none;">
         <div class="hud-item">
             <strong>FOTOS:</strong> <span id="photo-count">0/5</span>
         </div>
         <div class="hud-item">
             <strong>BATERÍA:</strong>
-            <div class="battery-bar">
-                <div class="battery-fill" id="battery-fill"></div>
+            <div class="battery-container">
+                <div class="battery-bar">
+                    <div class="battery-fill" id="battery-fill"></div>
+                </div>
+                <span id="battery-text">100%</span>
             </div>
         </div>
-        <div class="hud-item" id="message-box">
-            <span id="message-text">Encuentra las 5 fotos quemadas</span>
+        <div class="hud-item" id="message-box" style="display: none;">
+            <span id="message-text"></span>
         </div>
     </div>
-    
-    <!-- Controles móviles -->
-    <div class="mobile-controls" id="mobile-controls-container">
+
+    <!-- CONTROLES TÁCTILES -->
+    <div class="mobile-controls" id="mobile-controls" style="display: none;">
         <div class="mobile-joystick" id="joystick">
             <div class="joystick-knob"></div>
         </div>
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-            <div class="mobile-button" id="flashlight-btn">F<br>Linterna</div>
-            <div class="mobile-button" id="interact-btn">E<br>Interactuar</div>
-            <div class="mobile-button" id="jump-btn">⬆<br>Saltar</div>
+        <div class="mobile-buttons">
+            <div class="mobile-button" id="flashlight-btn">
+                <span>🔦</span>
+                <span>Linterna</span>
+            </div>
+            <div class="mobile-button" id="interact-btn">
+                <span>👆</span>
+                <span>Interactuar</span>
+            </div>
+            <div class="mobile-button" id="jump-btn">
+                <span>⬆</span>
+                <span>Saltar</span>
+            </div>
         </div>
     </div>
-    
-    <!-- Pantalla Game Over -->
+
+    <!-- EFECTOS DE PANTALLA -->
+    <div id="blood-effect"></div>
+    <div id="static-effect"></div>
+
+    <!-- PANTALLA GAME OVER -->
     <div class="game-over" id="game-over-screen">
         <h1>GAME OVER</h1>
-        <p id="game-over-reason">Has sido atrapado por tus propios recuerdos</p>
-        <button class="btn" onclick="restartGame()">REINICIAR JUEGO</button>
-        <button class="btn" onclick="showMenu()">VOLVER AL MENÚ</button>
+        <p id="game-over-reason"></p>
+        <button class="btn" onclick="restartGame()">REINICIAR</button>
+        <button class="btn" onclick="location.reload()">MENÚ</button>
     </div>
+
+    <!-- THREE.JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
-    <!-- Scripts -->
+    <!-- SCRIPT DEL JUEGO (TODO EN UNO) -->
     <script>
-        // Detectar dispositivo
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        // ============================================
+        // JUEGO COMPLETO EN UN SOLO ARCHIVO
+        // ============================================
         
-        // Elementos del DOM
-        const loadingScreen = document.getElementById('loading-screen');
-        const loadingBar = document.getElementById('loading-bar');
-        const loadingText = document.getElementById('loading-text');
-        const gameContainer = document.getElementById('game-container');
-        const gameHud = document.getElementById('game-hud');
-        const mobileControls = document.getElementById('mobile-controls-container');
-        const pcControls = document.getElementById('pc-controls');
-        const mobileControlsInfo = document.getElementById('mobile-controls');
-        
-        // Configurar controles según dispositivo
-        if (isMobile) {
-            mobileControls.style.display = 'flex';
-            mobileControlsInfo.style.display = 'block';
-            pcControls.style.display = 'none';
-            
-            // Configurar joystick táctil
-            setupTouchControls();
-        } else {
-            mobileControls.style.display = 'none';
-            mobileControlsInfo.style.display = 'none';
-            pcControls.style.display = 'block';
-        }
-        
-        // Variables del juego
-        let gameInstance = null;
-        let loadingProgress = 0;
-        
-        // Simulación de carga
-        const loadingStages = [
-            "Inicializando motor gráfico...",
-            "Cargando shaders procedurales...",
-            "Generando entorno 3D...",
-            "Creando sistema de audio...",
-            "Inicializando IA del monstruo...",
-            "Configurando efectos de terror...",
-            "Listo para comenzar..."
-        ];
-        
-        // Iniciar carga
-        startLoading();
-        
-        function startLoading() {
-            let stage = 0;
-            const interval = setInterval(() => {
-                loadingProgress += 5 + Math.random() * 10;
-                if (loadingProgress > 100) loadingProgress = 100;
+        class CicatricesDeMemoria {
+            constructor() {
+                this.gameState = {
+                    photosFound: 0,
+                    totalPhotos: 5,
+                    flashlightBattery: 100,
+                    monsterActive: false,
+                    flashlightOn: false,
+                    monsterDistance: 100,
+                    playerHealth: 100,
+                    gameOver: false,
+                    gameStarted: false,
+                    paused: false
+                };
+
+                this.scene = null;
+                this.camera = null;
+                this.renderer = null;
+                this.player = null;
+                this.monster = null;
+                this.photos = [];
+                this.flashlight = null;
                 
-                loadingBar.style.width = loadingProgress + '%';
+                this.keys = {};
+                this.mouse = { x: 0, y: 0 };
+                this.cameraRotation = { x: 0, y: 0 };
+                this.lookSpeed = 0.001;
+                this.moveSpeed = 0.08;
                 
-                // Cambiar texto cada 15%
-                if (loadingProgress >= (stage + 1) * 100 / loadingStages.length) {
-                    if (stage < loadingStages.length) {
-                        loadingText.textContent = loadingStages[stage];
-                        stage++;
+                this.init();
+            }
+
+            init() {
+                this.createScene();
+                this.createCamera();
+                this.createRenderer();
+                this.setupLights();
+                this.generateEnvironment();
+                this.createMonster();
+                this.createPhotos();
+                this.setupControls();
+                this.setupUI();
+                this.startGameTimers();
+                this.animate();
+                
+                // Mostrar controles móviles
+                if (/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                    document.getElementById('mobile-controls').style.display = 'flex';
+                }
+            }
+
+            createScene() {
+                this.scene = new THREE.Scene();
+                this.scene.fog = new THREE.Fog(0x000000, 1, 30);
+            }
+
+            createCamera() {
+                const aspect = window.innerWidth / window.innerHeight;
+                this.camera = new THREE.PerspectiveCamera(75, aspect, 0.1, 1000);
+                this.camera.position.set(0, 1.6, 5);
+            }
+
+            createRenderer() {
+                this.renderer = new THREE.WebGLRenderer({ 
+                    antialias: true,
+                    alpha: true,
+                    powerPreference: "high-performance"
+                });
+                
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                
+                const container = document.getElementById('game-container');
+                container.appendChild(this.renderer.domElement);
+                container.style.display = 'block';
+            }
+
+            setupLights() {
+                // Luz ambiental
+                const ambient = new THREE.AmbientLight(0x222222, 0.3);
+                this.scene.add(ambient);
+                
+                // Linterna
+                this.flashlight = new THREE.SpotLight(0xffeedd, 1.5, 20, Math.PI/4, 0.5, 1);
+                this.flashlight.position.set(0, 0, 0);
+                this.camera.add(this.flashlight);
+                this.flashlight.visible = false;
+                
+                // Luz direccional
+                const directional = new THREE.DirectionalLight(0x445588, 0.2);
+                directional.position.set(10, 20, 5);
+                this.scene.add(directional);
+            }
+
+            generateEnvironment() {
+                // Piso
+                const floor = new THREE.Mesh(
+                    new THREE.PlaneGeometry(30, 30),
+                    new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.8 })
+                );
+                floor.rotation.x = -Math.PI / 2;
+                floor.receiveShadow = true;
+                this.scene.add(floor);
+                
+                // Paredes simples
+                const wallMaterial = new THREE.MeshStandardMaterial({ color: 0x555555 });
+                const walls = [
+                    { pos: [0, 2.5, -8], size: [16, 5, 0.2] },
+                    { pos: [0, 2.5, 8], size: [16, 5, 0.2] },
+                    { pos: [8, 2.5, 0], size: [0.2, 5, 16] },
+                    { pos: [-8, 2.5, 0], size: [0.2, 5, 16] }
+                ];
+                
+                walls.forEach(w => {
+                    const wall = new THREE.Mesh(new THREE.BoxGeometry(...w.size), wallMaterial);
+                    wall.position.set(...w.pos);
+                    wall.castShadow = wall.receiveShadow = true;
+                    this.scene.add(wall);
+                });
+            }
+
+            createMonster() {
+                const geometry = new THREE.SphereGeometry(1, 16, 16);
+                const material = new THREE.MeshBasicMaterial({ 
+                    color: 0x220000,
+                    transparent: true,
+                    opacity: 0.8
+                });
+                this.monster = new THREE.Mesh(geometry, material);
+                this.monster.position.set(12, 1, 12);
+                this.monster.visible = false;
+                this.scene.add(this.monster);
+            }
+
+            createPhotos() {
+                const positions = [
+                    [-6, 1.5, -6],
+                    [6, 1.5, -6],
+                    [-6, 1.5, 6],
+                    [6, 1.5, 6],
+                    [0, 1.5, 0]
+                ];
+                
+                positions.forEach((pos, i) => {
+                    const frame = new THREE.Mesh(
+                        new THREE.BoxGeometry(0.6, 0.4, 0.05),
+                        new THREE.MeshBasicMaterial({ color: 0x8B4513 })
+                    );
+                    frame.position.set(...pos);
+                    frame.userData = { type: 'photo', id: i, collected: false };
+                    this.scene.add(frame);
+                    this.photos.push(frame);
+                });
+            }
+
+            setupControls() {
+                // Teclado
+                document.addEventListener('keydown', (e) => {
+                    this.keys[e.key.toLowerCase()] = true;
+                    if (e.key === 'f') this.toggleFlashlight();
+                    if (e.key === 'e') this.checkInteraction();
+                    if (e.key === 'r') this.restartGame();
+                });
+                
+                document.addEventListener('keyup', (e) => {
+                    this.keys[e.key.toLowerCase()] = false;
+                });
+                
+                // Mouse/touch para mirar
+                let lastTouch = null;
+                
+                document.addEventListener('touchmove', (e) => {
+                    if (!this.gameState.gameStarted || this.gameState.paused) return;
+                    e.preventDefault();
+                    
+                    if (lastTouch && e.touches.length === 1) {
+                        const touch = e.touches[0];
+                        const deltaX = touch.clientX - lastTouch.x;
+                        const deltaY = touch.clientY - lastTouch.y;
+                        
+                        this.cameraRotation.y -= deltaX * this.lookSpeed * 0.5;
+                        this.cameraRotation.x -= deltaY * this.lookSpeed * 0.5;
+                        this.cameraRotation.x = Math.max(-Math.PI/2, Math.min(Math.PI/2, this.cameraRotation.x));
+                        
+                        this.camera.rotation.set(this.cameraRotation.x, this.cameraRotation.y, 0);
+                    }
+                    
+                    lastTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                });
+                
+                document.addEventListener('touchend', () => {
+                    lastTouch = null;
+                });
+                
+                // Controles táctiles
+                this.setupTouchControls();
+            }
+
+            setupTouchControls() {
+                const joystick = document.getElementById('joystick');
+                let isDragging = false;
+                
+                joystick.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    isDragging = true;
+                });
+                
+                document.addEventListener('touchmove', (e) => {
+                    if (!isDragging || !this.gameState.gameStarted) return;
+                    e.preventDefault();
+                    
+                    const touch = e.touches[0];
+                    const rect = joystick.getBoundingClientRect();
+                    const centerX = rect.left + rect.width / 2;
+                    const centerY = rect.top + rect.height / 2;
+                    
+                    const deltaX = touch.clientX - centerX;
+                    const deltaY = touch.clientY - centerY;
+                    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                    const radius = rect.width / 2;
+                    
+                    let moveX = deltaX;
+                    let moveY = deltaY;
+                    
+                    if (distance > radius) {
+                        moveX = (deltaX / distance) * radius;
+                        moveY = (deltaY / distance) * radius;
+                    }
+                    
+                    // Mover joystick visualmente
+                    joystick.style.transform = `translate(${moveX}px, ${moveY}px)`;
+                    
+                    // Convertir a input
+                    const inputX = moveX / radius;
+                    const inputY = moveY / radius;
+                    
+                    // Simular teclas
+                    this.keys['a'] = inputX < -0.1;
+                    this.keys['d'] = inputX > 0.1;
+                    this.keys['w'] = inputY < -0.1;
+                    this.keys['s'] = inputY > 0.1;
+                });
+                
+                document.addEventListener('touchend', () => {
+                    isDragging = false;
+                    joystick.style.transform = 'translate(0, 0)';
+                    this.keys['a'] = this.keys['d'] = this.keys['w'] = this.keys['s'] = false;
+                });
+                
+                // Botones táctiles
+                ['flashlight-btn', 'interact-btn', 'jump-btn'].forEach(id => {
+                    document.getElementById(id).addEventListener('touchstart', (e) => {
+                        e.preventDefault();
+                        const btn = e.target.closest('.mobile-button');
+                        btn.style.transform = 'scale(0.9)';
+                        
+                        if (id === 'flashlight-btn') this.toggleFlashlight();
+                        if (id === 'interact-btn') this.checkInteraction();
+                        if (id === 'jump-btn') this.keys[' '] = true;
+                    });
+                    
+                    document.getElementById(id).addEventListener('touchend', () => {
+                        const btn = document.getElementById(id);
+                        btn.style.transform = 'scale(1)';
+                        this.keys[' '] = false;
+                    });
+                });
+            }
+
+            setupUI() {
+                // Ocultar carga, mostrar HUD
+                document.getElementById('game-hud').style.display = 'block';
+                this.updateHUD();
+                this.showMessage('Encuentra las 5 fotos quemadas', 3000);
+            }
+
+            updateHUD() {
+                document.getElementById('photo-count').textContent = 
+                    `${this.gameState.photosFound}/${this.gameState.totalPhotos}`;
+                
+                const battery = this.gameState.flashlightBattery;
+                document.getElementById('battery-fill').style.width = `${battery}%`;
+                document.getElementById('battery-text').textContent = `${Math.round(battery)}%`;
+                
+                // Color de batería
+                const fill = document.getElementById('battery-fill');
+                if (battery > 50) fill.style.background = 'linear-gradient(90deg, #00ff00, #ffff00)';
+                else if (battery > 20) fill.style.background = 'linear-gradient(90deg, #ffff00, #ff9900)';
+                else fill.style.background = 'linear-gradient(90deg, #ff9900, #ff0000)';
+            }
+
+            showMessage(text, duration = 3000) {
+                const box = document.getElementById('message-box');
+                const textElem = document.getElementById('message-text');
+                
+                textElem.textContent = text;
+                box.style.display = 'block';
+                
+                if (duration > 0) {
+                    setTimeout(() => box.style.display = 'none', duration);
+                }
+            }
+
+            toggleFlashlight() {
+                if (this.gameState.flashlightBattery <= 0) {
+                    this.showMessage('Batería agotada', 2000);
+                    return;
+                }
+                
+                this.gameState.flashlightOn = !this.gameState.flashlightOn;
+                this.flashlight.visible = this.gameState.flashlightOn;
+                
+                if (this.gameState.flashlightOn) {
+                    this.startBatteryConsumption();
+                }
+            }
+
+            startBatteryConsumption() {
+                if (this.batteryInterval) clearInterval(this.batteryInterval);
+                
+                this.batteryInterval = setInterval(() => {
+                    if (this.gameState.flashlightOn && this.gameState.flashlightBattery > 0) {
+                        this.gameState.flashlightBattery -= 0.3;
+                        this.updateHUD();
+                        
+                        // Linterna tenue con poca batería
+                        if (this.gameState.flashlightBattery < 30) {
+                            this.flashlight.intensity = 0.5 + (this.gameState.flashlightBattery / 30) * 0.5;
+                        }
+                        
+                        // Apagar si se acaba
+                        if (this.gameState.flashlightBattery <= 0) {
+                            this.gameState.flashlightOn = false;
+                            this.flashlight.visible = false;
+                            clearInterval(this.batteryInterval);
+                            this.showMessage('Se apagó la linterna', 2000);
+                        }
+                        
+                        // Spawnear monstruo
+                        if (this.gameState.flashlightBattery < 70 && !this.gameState.monsterActive) {
+                            this.spawnMonster();
+                        }
+                    } else {
+                        clearInterval(this.batteryInterval);
+                    }
+                }, 100);
+            }
+
+            spawnMonster() {
+                this.gameState.monsterActive = true;
+                this.monster.visible = true;
+                this.monster.position.set(
+                    (Math.random() - 0.5) * 10 + 5,
+                    1,
+                    (Math.random() - 0.5) * 10 + 5
+                );
+                this.showMessage('¡Algo te escuchó!', 2000);
+                this.startMonsterAI();
+            }
+
+            startMonsterAI() {
+                const updateMonster = () => {
+                    if (!this.gameState.monsterActive || this.gameState.gameOver) return;
+                    
+                    // Mover hacia el jugador
+                    const direction = new THREE.Vector3();
+                    direction.subVectors(this.camera.position, this.monster.position).normalize();
+                    this.monster.position.add(direction.multiplyScalar(0.02));
+                    
+                    // Mirar al jugador
+                    this.monster.lookAt(this.camera.position);
+                    
+                    // Calcular distancia
+                    this.gameState.monsterDistance = this.monster.position.distanceTo(this.camera.position);
+                    
+                    // Atacar si está cerca
+                    if (this.gameState.monsterDistance < 2) {
+                        this.monsterAttack();
+                    }
+                    
+                    // Continuar
+                    requestAnimationFrame(updateMonster);
+                };
+                
+                updateMonster();
+            }
+
+            monsterAttack() {
+                this.gameState.playerHealth -= 15;
+                this.showBloodEffect();
+                
+                if (this.gameState.playerHealth <= 0) {
+                    this.gameOver('El monstruo te atrapó');
+                } else {
+                    this.showMessage('¡Te atacó!', 1000);
+                }
+            }
+
+            showBloodEffect() {
+                const effect = document.getElementById('blood-effect');
+                effect.style.opacity = '0.4';
+                setTimeout(() => effect.style.opacity = '0', 500);
+            }
+
+            checkInteraction() {
+                // Raycast simple para fotos
+                const raycaster = new THREE.Raycaster();
+                raycaster.setFromCamera(new THREE.Vector2(0, 0), this.camera);
+                const intersects = raycaster.intersectObjects(this.photos);
+                
+                if (intersects.length > 0) {
+                    const photo = intersects[0].object;
+                    if (!photo.userData.collected) {
+                        photo.userData.collected = true;
+                        photo.visible = false;
+                        this.gameState.photosFound++;
+                        this.updateHUD();
+                        this.showMessage(`Foto ${this.gameState.photosFound}/5 encontrada`, 2000);
+                        
+                        if (this.gameState.photosFound >= this.gameState.totalPhotos) {
+                            this.gameWin();
+                        }
                     }
                 }
+            }
+
+            gameWin() {
+                setTimeout(() => {
+                    this.showMessage('PLOT TWIST: Tú provocaste el incendio', 5000);
+                }, 1000);
                 
-                // Cuando termine la carga
-                if (loadingProgress >= 100) {
-                    clearInterval(interval);
-                    setTimeout(() => {
-                        loadingScreen.style.display = 'none';
-                        gameHud.style.display = 'block';
-                        startGame();
-                    }, 500);
+                setTimeout(() => {
+                    this.showGameOver('¡Memoria recuperada!');
+                }, 6000);
+            }
+
+            gameOver(reason) {
+                this.gameState.gameOver = true;
+                this.showGameOver(reason);
+            }
+
+            showGameOver(reason) {
+                document.getElementById('game-over-reason').textContent = reason;
+                document.getElementById('game-over-screen').style.display = 'flex';
+                document.getElementById('game-hud').style.display = 'none';
+                document.getElementById('mobile-controls').style.display = 'none';
+            }
+
+            restartGame() {
+                location.reload();
+            }
+
+            startGameTimers() {
+                // Jumpscares
+                setTimeout(() => this.triggerJumpScare('static'), 20000);
+                setTimeout(() => this.triggerJumpScare('static'), 50000);
+                setTimeout(() => this.triggerJumpScare('static'), 80000);
+            }
+
+            triggerJumpScare(type) {
+                if (this.gameState.gameOver || !this.gameState.gameStarted) return;
+                
+                const effect = document.getElementById('static-effect');
+                effect.style.display = 'block';
+                effect.style.opacity = '0.7';
+                
+                setTimeout(() => {
+                    effect.style.opacity = '0';
+                    setTimeout(() => effect.style.display = 'none', 300);
+                }, 300);
+                
+                this.showMessage('¡Aaaah!', 1000);
+            }
+
+            animate() {
+                requestAnimationFrame(() => this.animate());
+                
+                if (!this.gameState.gameStarted || this.gameState.paused || this.gameState.gameOver) return;
+                
+                // Movimiento
+                this.updateMovement();
+                
+                // Actualizar monstruo
+                if (this.gameState.monsterActive) {
+                    this.monster.material.opacity = 0.7 + Math.sin(Date.now() * 0.005) * 0.3;
                 }
-            }, 200);
+                
+                // Render
+                this.renderer.render(this.scene, this.camera);
+            }
+
+            updateMovement() {
+                const moveVector = new THREE.Vector3();
+                const forward = new THREE.Vector3();
+                const right = new THREE.Vector3();
+                
+                this.camera.getWorldDirection(forward);
+                forward.y = 0;
+                forward.normalize();
+                right.crossVectors(forward, new THREE.Vector3(0, 1, 0));
+                
+                if (this.keys['w']) moveVector.add(forward);
+                if (this.keys['s']) moveVector.sub(forward);
+                if (this.keys['a']) moveVector.sub(right);
+                if (this.keys['d']) moveVector.add(right);
+                
+                if (moveVector.length() > 0) {
+                    moveVector.normalize();
+                    const speed = this.keys['shift'] ? this.moveSpeed * 1.5 : this.moveSpeed;
+                    this.camera.position.add(moveVector.multiplyScalar(speed));
+                }
+                
+                // Limitar movimiento
+                this.camera.position.x = Math.max(-7, Math.min(7, this.camera.position.x));
+                this.camera.position.z = Math.max(-7, Math.min(7, this.camera.position.z));
+            }
         }
+
+        // ============================================
+        // FUNCIONES GLOBALES
+        // ============================================
+        
+        let game = null;
         
         function startGame() {
-            // Aquí se cargaría el juego real exportado desde Godot
-            // Para GitHub Pages, necesitas el build exportado
+            document.getElementById('loading-screen').style.display = 'none';
+            document.getElementById('game-hud').style.display = 'block';
             
-            console.log("Iniciando juego Cicatrices de Memoria");
+            // Iniciar juego
+            game = new CicatricesDeMemoria();
+            game.gameState.gameStarted = true;
             
-            // Mostrar mensaje inicial
-            showMessage("Encuentra las 5 fotos quemadas", 3000);
-            
-            // Simular actualización de HUD
-            updateHUD(0, 1.0);
-            
-            // Configurar botones móviles
-            if (isMobile) {
-                document.getElementById('flashlight-btn').addEventListener('touchstart', () => {
-                    triggerKey('F');
-                });
-                
-                document.getElementById('interact-btn').addEventListener('touchstart', () => {
-                    triggerKey('E');
-                });
-                
-                document.getElementById('jump-btn').addEventListener('touchstart', () => {
-                    triggerKey(' ');
-                });
+            // Mostrar controles móviles
+            if (/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                document.getElementById('mobile-controls').style.display = 'flex';
             }
-        }
-        
-        function setupTouchControls() {
-            const joystick = document.getElementById('joystick');
-            let isDragging = false;
-            
-            joystick.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                isDragging = true;
-                updateJoystick(e.touches[0]);
-            });
-            
-            document.addEventListener('touchmove', (e) => {
-                if (isDragging) {
-                    e.preventDefault();
-                    updateJoystick(e.touches[0]);
-                }
-            });
-            
-            document.addEventListener('touchend', () => {
-                isDragging = false;
-                // Resetear joystick
-                joystick.style.transform = 'translateX(0) translateY(0)';
-            });
-            
-            function updateJoystick(touch) {
-                const rect = joystick.getBoundingClientRect();
-                const centerX = rect.left + rect.width / 2;
-                const centerY = rect.top + rect.height / 2;
-                
-                const deltaX = touch.clientX - centerX;
-                const deltaY = touch.clientY - centerY;
-                
-                // Limitar al radio del joystick
-                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-                const maxDistance = rect.width / 2;
-                
-                let moveX = deltaX;
-                let moveY = deltaY;
-                
-                if (distance > maxDistance) {
-                    moveX = (deltaX / distance) * maxDistance;
-                    moveY = (deltaY / distance) * maxDistance;
-                }
-                
-                // Mover joystick visualmente
-                joystick.style.transform = `translateX(${moveX}px) translateY(${moveY}px)`;
-                
-                // Convertir a input de movimiento (normalizado)
-                const inputX = moveX / maxDistance;
-                const inputY = moveY / maxDistance;
-                
-                // Enviar input al juego
-                sendJoystickInput(inputX, inputY);
-            }
-        }
-        
-        function sendJoystickInput(x, y) {
-            // Esta función enviaría el input al juego
-            console.log(`Joystick: X=${x.toFixed(2)}, Y=${y.toFixed(2)}`);
-        }
-        
-        function triggerKey(key) {
-            // Simular tecla presionada
-            console.log(`Tecla presionada: ${key}`);
-            
-            // Efectos visuales para feedback táctil
-            event.target.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                event.target.style.transform = 'scale(1)';
-            }, 100);
-        }
-        
-        function updateHUD(photos, battery) {
-            document.getElementById('photo-count').textContent = `${photos}/5`;
-            document.getElementById('battery-fill').style.width = `${battery * 100}%`;
-            
-            // Cambiar color de la batería
-            const batteryFill = document.getElementById('battery-fill');
-            if (battery > 0.5) {
-                batteryFill.style.background = 'linear-gradient(90deg, #00ff00, #ffff00)';
-            } else if (battery > 0.2) {
-                batteryFill.style.background = 'linear-gradient(90deg, #ffff00, #ff9900)';
-            } else {
-                batteryFill.style.background = 'linear-gradient(90deg, #ff9900, #ff0000)';
-            }
-        }
-        
-        function showMessage(text, duration = 3000) {
-            const messageBox = document.getElementById('message-box');
-            const messageText = document.getElementById('message-text');
-            
-            messageText.textContent = text;
-            messageBox.style.display = 'block';
-            
-            if (duration > 0) {
-                setTimeout(() => {
-                    messageBox.style.display = 'none';
-                }, duration);
-            }
-        }
-        
-        function showWarning(text) {
-            showMessage(`⚠️ ${text}`, 2000);
-        }
-        
-        function gameOver(reason) {
-            document.getElementById('game-over-reason').textContent = reason;
-            document.getElementById('game-over-screen').style.display = 'flex';
-            gameHud.style.display = 'none';
         }
         
         function restartGame() {
-            document.getElementById('game-over-screen').style.display = 'none';
-            gameHud.style.display = 'block';
-            updateHUD(0, 1.0);
-            showMessage("Reiniciando juego...", 2000);
+            location.reload();
         }
         
-        function showMenu() {
-            // Volver a pantalla de carga/inicio
-            document.getElementById('game-over-screen').style.display = 'none';
-            loadingScreen.style.display = 'flex';
-            loadingProgress = 0;
-            loadingBar.style.width = '0%';
-            startLoading();
-        }
+        // Simular carga
+        let progress = 0;
+        const loadInterval = setInterval(() => {
+            progress += 2 + Math.random() * 3;
+            if (progress > 100) progress = 100;
+            
+            document.getElementById('loading-bar').style.width = progress + '%';
+            document.getElementById('loading-text').textContent = 
+                progress < 30 ? 'Cargando motor 3D...' :
+                progress < 60 ? 'Generando entorno...' :
+                progress < 90 ? 'Creando efectos...' :
+                'Listo para comenzar';
+                
+            if (progress >= 100) {
+                clearInterval(loadInterval);
+                document.getElementById('start-btn').style.display = 'block';
+            }
+        }, 100);
         
-        // Capturar teclas para PC
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                gameOver("Juego pausado");
-            }
-            
-            // Simular recolección de foto (para demo)
-            if (e.key === 'P') {
-                const current = parseInt(document.getElementById('photo-count').textContent[0]);
-                if (current < 5) {
-                    updateHUD(current + 1, 1.0);
-                    showMessage(`¡Foto encontrada! (${current + 1}/5)`);
-                }
-            }
-            
-            // Simular uso de batería (para demo)
-            if (e.key === 'B') {
-                const batteryFill = document.getElementById('battery-fill');
-                let width = parseInt(batteryFill.style.width);
-                if (isNaN(width)) width = 100;
-                width = Math.max(0, width - 10);
-                batteryFill.style.width = width + '%';
-                updateHUD(0, width / 100);
+        // Redimensionar
+        window.addEventListener('resize', () => {
+            if (game && game.camera && game.renderer) {
+                game.camera.aspect = window.innerWidth / window.innerHeight;
+                game.camera.updateProjectionMatrix();
+                game.renderer.setSize(window.innerWidth, window.innerHeight);
             }
         });
         
-        // Demo: Simular juego automático
-        setTimeout(() => {
-            showWarning("Escuchas algo detrás de ti...");
-        }, 10000);
-        
-        setTimeout(() => {
-            showWarning("¡La linterna se está agotando!");
-        }, 20000);
+        // Prevenir zoom en móvil
+        document.addEventListener('gesturestart', (e) => e.preventDefault());
+        document.addEventListener('touchmove', (e) => {
+            if (e.scale !== 1) e.preventDefault();
+        }, { passive: false });
     </script>
 </body>
-</html>
+</html
