@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Cicatrices de Memoria - Terror Psicológico 3D</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #000;
+            color: #fff;
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+        
+        #loading-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .loading-title {
+            font-size: 2.5em;
+            color: #8B0000;
+            text-shadow: 0 0 10px #ff0000;
+            margin-bottom: 20px;
+            animation: flicker 3s infinite;
+        }
+        
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .loading-bar-container {
+            width: 300px;
+            height: 20px;
+            background: #222;
+            border: 2px solid #444;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .loading-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #8B0000, #FF0000);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .loading-text {
+            margin-top: 20px;
+            color: #888;
+        }
+        
+        .controls-info {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+        
+        .warning {
+            color: #ff6600;
+            margin: 20px 0;
+            text-align: center;
+            max-width: 500px;
+        }
+        
+        #game-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        /* Botones móviles */
+        .mobile-controls {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            display: none;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 100;
+        }
+        
+        .mobile-joystick {
+            width: 150px;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 50%;
+            position: relative;
+            touch-action: none;
+        }
+        
+        .mobile-button {
+            width: 80px;
+            height: 80px;
+            background: rgba(139, 0, 0, 0.7);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 0.8em;
+            text-align: center;
+            border: 2px solid #8B0000;
+            user-select: none;
+            touch-action: none;
+        }
+        
+        /* HUD del juego */
+        .hud {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: none;
+            z-index: 50;
+        }
+        
+        .hud-item {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 5px;
+            border-left: 3px solid #8B0000;
+            margin-bottom: 10px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .battery-bar {
+            width: 200px;
+            height: 20px;
+            background: #222;
+            border: 1px solid #444;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .battery-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff00, #ff0000);
+            width: 100%;
+        }
+        
+        /* Game Over Screen */
+        .game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+        
+        .game-over h1 {
+            color: #ff0000;
+            font-size: 3em;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #ff0000;
+        }
+        
+        .game-over p {
+            font-size: 1.2em;
+            color: #ccc;
+            margin-bottom: 30px;
+            text-align: center;
+            max-width: 500px;
+        }
+        
+        .btn {
+            background: #8B0000;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin: 10px;
+        }
+        
+        .btn:hover {
+            background: #ff0000;
+        }
+    </style>
+</head>
+<body>
+    <!-- Pantalla de carga -->
+    <div id="loading-screen">
+        <h1 class="loading-title">CICATRICES DE MEMORIA</h1>
+        <div class="loading-bar-container">
+            <div class="loading-bar" id="loading-bar"></div>
+        </div>
+        <div class="loading-text" id="loading-text">Inicializando motor gráfico...</div>
+        
+        <div class="warning">
+            ⚠️ JUEGO DE TERROR - Contiene sustos y temas perturbadores<br>
+            Recomendado para mayores de 16 años
+        </div>
+        
+        <div class="controls-info" id="pc-controls">
+            <strong>CONTROLES PC:</strong><br>
+            WASD = Movimiento | Mouse = Mirar | F = Linterna<br>
+            E = Interactuar | SHIFT = Correr | ESC = Menú
+        </div>
+        
+        <div class="controls-info" id="mobile-controls" style="display: none;">
+            <strong>CONTROLES MÓVIL:</strong><br>
+            Joystick izquierdo = Movimiento | Arrastrar pantalla = Mirar<br>
+            Botones táctiles = Acciones | Gyroscopio = Rotación (opcional)
+        </div>
+    </div>
+    
+    <!-- Contenedor del juego -->
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+    </div>
+    
+    <!-- HUD del juego -->
+    <div class="hud" id="game-hud">
+        <div class="hud-item">
+            <strong>FOTOS:</strong> <span id="photo-count">0/5</span>
+        </div>
+        <div class="hud-item">
+            <strong>BATERÍA:</strong>
+            <div class="battery-bar">
+                <div class="battery-fill" id="battery-fill"></div>
+            </div>
+        </div>
+        <div class="hud-item" id="message-box">
+            <span id="message-text">Encuentra las 5 fotos quemadas</span>
+        </div>
+    </div>
+    
+    <!-- Controles móviles -->
+    <div class="mobile-controls" id="mobile-controls-container">
+        <div class="mobile-joystick" id="joystick">
+            <div class="joystick-knob"></div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="mobile-button" id="flashlight-btn">F<br>Linterna</div>
+            <div class="mobile-button" id="interact-btn">E<br>Interactuar</div>
+            <div class="mobile-button" id="jump-btn">⬆<br>Saltar</div>
+        </div>
+    </div>
+    
+    <!-- Pantalla Game Over -->
+    <div class="game-over" id="game-over-screen">
+        <h1>GAME OVER</h1>
+        <p id="game-over-reason">Has sido atrapado por tus propios recuerdos</p>
+        <button class="btn" onclick="restartGame()">REINICIAR JUEGO</button>
+        <button class="btn" onclick="showMenu()">VOLVER AL MENÚ</button>
+    </div>
+    
+    <!-- Scripts -->
+    <script>
+        // Detectar dispositivo
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        // Elementos del DOM
+        const loadingScreen = document.getElementById('loading-screen');
+        const loadingBar = document.getElementById('loading-bar');
+        const loadingText = document.getElementById('loading-text');
+        const gameContainer = document.getElementById('game-container');
+        const gameHud = document.getElementById('game-hud');
+        const mobileControls = document.getElementById('mobile-controls-container');
+        const pcControls = document.getElementById('pc-controls');
+        const mobileControlsInfo = document.getElementById('mobile-controls');
+        
+        // Configurar controles según dispositivo
+        if (isMobile) {
+            mobileControls.style.display = 'flex';
+            mobileControlsInfo.style.display = 'block';
+            pcControls.style.display = 'none';
+            
+            // Configurar joystick táctil
+            setupTouchControls();
+        } else {
+            mobileControls.style.display = 'none';
+            mobileControlsInfo.style.display = 'none';
+            pcControls.style.display = 'block';
+        }
+        
+        // Variables del juego
+        let gameInstance = null;
+        let loadingProgress = 0;
+        
+        // Simulación de carga
+        const loadingStages = [
+            "Inicializando motor gráfico...",
+            "Cargando shaders procedurales...",
+            "Generando entorno 3D...",
+            "Creando sistema de audio...",
+            "Inicializando IA del monstruo...",
+            "Configurando efectos de terror...",
+            "Listo para comenzar..."
+        ];
+        
+        // Iniciar carga
+        startLoading();
+        
+        function startLoading() {
+            let stage = 0;
+            const interval = setInterval(() => {
+                loadingProgress += 5 + Math.random() * 10;
+                if (loadingProgress > 100) loadingProgress = 100;
+                
+                loadingBar.style.width = loadingProgress + '%';
+                
+                // Cambiar texto cada 15%
+                if (loadingProgress >= (stage + 1) * 100 / loadingStages.length) {
+                    if (stage < loadingStages.length) {
+                        loadingText.textContent = loadingStages[stage];
+                        stage++;
+                    }
+                }
+                
+                // Cuando termine la carga
+                if (loadingProgress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none';
+                        gameHud.style.display = 'block';
+                        startGame();
+                    }, 500);
+                }
+            }, 200);
+        }
+        
+        function startGame() {
+            // Aquí se cargaría el juego real exportado desde Godot
+            // Para GitHub Pages, necesitas el build exportado
+            
+            console.log("Iniciando juego Cicatrices de Memoria");
+            
+            // Mostrar mensaje inicial
+            showMessage("Encuentra las 5 fotos quemadas", 3000);
+            
+            // Simular actualización de HUD
+            updateHUD(0, 1.0);
+            
+            // Configurar botones móviles
+            if (isMobile) {
+                document.getElementById('flashlight-btn').addEventListener('touchstart', () => {
+                    triggerKey('F');
+                });
+                
+                document.getElementById('interact-btn').addEventListener('touchstart', () => {
+                    triggerKey('E');
+                });
+                
+                document.getElementById('jump-btn').addEventListener('touchstart', () => {
+                    triggerKey(' ');
+                });
+            }
+        }
+        
+        function setupTouchControls() {
+            const joystick = document.getElementById('joystick');
+            let isDragging = false;
+            
+            joystick.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                isDragging = true;
+                updateJoystick(e.touches[0]);
+            });
+            
+            document.addEventListener('touchmove', (e) => {
+                if (isDragging) {
+                    e.preventDefault();
+                    updateJoystick(e.touches[0]);
+                }
+            });
+            
+            document.addEventListener('touchend', () => {
+                isDragging = false;
+                // Resetear joystick
+                joystick.style.transform = 'translateX(0) translateY(0)';
+            });
+            
+            function updateJoystick(touch) {
+                const rect = joystick.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                const deltaX = touch.clientX - centerX;
+                const deltaY = touch.clientY - centerY;
+                
+                // Limitar al radio del joystick
+                const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                const maxDistance = rect.width / 2;
+                
+                let moveX = deltaX;
+                let moveY = deltaY;
+                
+                if (distance > maxDistance) {
+                    moveX = (deltaX / distance) * maxDistance;
+                    moveY = (deltaY / distance) * maxDistance;
+                }
+                
+                // Mover joystick visualmente
+                joystick.style.transform = `translateX(${moveX}px) translateY(${moveY}px)`;
+                
+                // Convertir a input de movimiento (normalizado)
+                const inputX = moveX / maxDistance;
+                const inputY = moveY / maxDistance;
+                
+                // Enviar input al juego
+                sendJoystickInput(inputX, inputY);
+            }
+        }
+        
+        function sendJoystickInput(x, y) {
+            // Esta función enviaría el input al juego
+            console.log(`Joystick: X=${x.toFixed(2)}, Y=${y.toFixed(2)}`);
+        }
+        
+        function triggerKey(key) {
+            // Simular tecla presionada
+            console.log(`Tecla presionada: ${key}`);
+            
+            // Efectos visuales para feedback táctil
+            event.target.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                event.target.style.transform = 'scale(1)';
+            }, 100);
+        }
+        
+        function updateHUD(photos, battery) {
+            document.getElementById('photo-count').textContent = `${photos}/5`;
+            document.getElementById('battery-fill').style.width = `${battery * 100}%`;
+            
+            // Cambiar color de la batería
+            const batteryFill = document.getElementById('battery-fill');
+            if (battery > 0.5) {
+                batteryFill.style.background = 'linear-gradient(90deg, #00ff00, #ffff00)';
+            } else if (battery > 0.2) {
+                batteryFill.style.background = 'linear-gradient(90deg, #ffff00, #ff9900)';
+            } else {
+                batteryFill.style.background = 'linear-gradient(90deg, #ff9900, #ff0000)';
+            }
+        }
+        
+        function showMessage(text, duration = 3000) {
+            const messageBox = document.getElementById('message-box');
+            const messageText = document.getElementById('message-text');
+            
+            messageText.textContent = text;
+            messageBox.style.display = 'block';
+            
+            if (duration > 0) {
+                setTimeout(() => {
+                    messageBox.style.display = 'none';
+                }, duration);
+            }
+        }
+        
+        function showWarning(text) {
+            showMessage(`⚠️ ${text}`, 2000);
+        }
+        
+        function gameOver(reason) {
+            document.getElementById('game-over-reason').textContent = reason;
+            document.getElementById('game-over-screen').style.display = 'flex';
+            gameHud.style.display = 'none';
+        }
+        
+        function restartGame() {
+            document.getElementById('game-over-screen').style.display = 'none';
+            gameHud.style.display = 'block';
+            updateHUD(0, 1.0);
+            showMessage("Reiniciando juego...", 2000);
+        }
+        
+        function showMenu() {
+            // Volver a pantalla de carga/inicio
+            document.getElementById('game-over-screen').style.display = 'none';
+            loadingScreen.style.display = 'flex';
+            loadingProgress = 0;
+            loadingBar.style.width = '0%';
+            startLoading();
+        }
+        
+        // Capturar teclas para PC
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                gameOver("Juego pausado");
+            }
+            
+            // Simular recolección de foto (para demo)
+            if (e.key === 'P') {
+                const current = parseInt(document.getElementById('photo-count').textContent[0]);
+                if (current < 5) {
+                    updateHUD(current + 1, 1.0);
+                    showMessage(`¡Foto encontrada! (${current + 1}/5)`);
+                }
+            }
+            
+            // Simular uso de batería (para demo)
+            if (e.key === 'B') {
+                const batteryFill = document.getElementById('battery-fill');
+                let width = parseInt(batteryFill.style.width);
+                if (isNaN(width)) width = 100;
+                width = Math.max(0, width - 10);
+                batteryFill.style.width = width + '%';
+                updateHUD(0, width / 100);
+            }
+        });
+        
+        // Demo: Simular juego automático
+        setTimeout(() => {
+            showWarning("Escuchas algo detrás de ti...");
+        }, 10000);
+        
+        setTimeout(() => {
+            showWarning("¡La linterna se está agotando!");
+        }, 20000);
+    </script>
+</body>
+</html>
